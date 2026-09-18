@@ -1,0 +1,9 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+.venv/
+.artifacts/
+.local-backups/
+.env
+.env.*
+!.env.example
