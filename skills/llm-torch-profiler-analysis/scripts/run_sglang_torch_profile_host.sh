@@ -175,7 +175,6 @@ ANALYSIS_PATH="$RUN_DIR/analysis_sglang.txt"
 PROFILE_ROOT="$RUN_DIR/sglang_profile_live"
 BENCHMARK_PATH="$RUN_DIR/benchmark_sglang.json"
 PID_PATH="$RUN_DIR/sglang_server.pid"
-LAUNCH_PATTERN="[s]glang.launch_server.*--port $PORT"
 SERVER_ARGS="python3 -m sglang.launch_server --model-path \"$MODEL\" --port \"$PORT\" --tp-size \"$TP_SIZE\" --mem-fraction-static \"$MEM_FRACTION\""
 
 if [[ "$TRUST_REMOTE_CODE" -eq 1 ]]; then
@@ -185,12 +184,27 @@ if [[ -n "$SERVER_EXTRA" ]]; then
   SERVER_ARGS="$SERVER_ARGS $SERVER_EXTRA"
 fi
 
-docker exec sglang_bbuf bash -lc "mkdir -p '$RUN_DIR' '$PROFILE_ROOT'"
-docker exec sglang_bbuf bash -lc "pkill -f '$LAUNCH_PATTERN' >/dev/null 2>&1 || true"
-docker exec sglang_bbuf bash -lc "mkdir -p '$RUN_DIR' '$PROFILE_ROOT' && cd '$SGLANG_REPO_DIR' && rm -f '$PID_PATH' && (CUDA_VISIBLE_DEVICES=$GPUS PYTHONPATH=python nohup $SERVER_ARGS > '$LOG_PATH' 2>&1 < /dev/null & echo \$! > '$PID_PATH')"
+docker exec sglang_bbuf python3 -c 'import socket, sys; s = socket.socket(); s.bind(("0.0.0.0", int(sys.argv[1])))' "$PORT"
+docker exec sglang_bbuf bash -lc "mkdir -p '$RUN_DIR' && mkdir '$PROFILE_ROOT' && test ! -e '$PID_PATH'"
+docker exec sglang_bbuf bash -lc "cd '$SGLANG_REPO_DIR' && (CUDA_VISIBLE_DEVICES=$GPUS PYTHONPATH=python nohup $SERVER_ARGS > '$LOG_PATH' 2>&1 < /dev/null & echo \$! > '$PID_PATH')"
+SERVER_PID=$(docker exec sglang_bbuf cat "$PID_PATH")
+if [[ ! "$SERVER_PID" =~ ^[1-9][0-9]*$ ]]; then
+  echo "Invalid launched server PID; inspect $PID_PATH before cleanup." >&2
+  exit 1
+fi
+SERVER_IDENTITY=$(docker exec sglang_bbuf ps -p "$SERVER_PID" -o lstart=)
 
 cleanup() {
-  docker exec sglang_bbuf bash -lc "pkill -f '$LAUNCH_PATTERN' >/dev/null 2>&1 || true" >/dev/null 2>&1 || true
+  local current_identity
+  current_identity=$(docker exec sglang_bbuf ps -p "$SERVER_PID" -o lstart=) || {
+    echo "Server PID $SERVER_PID could not be verified; no process was terminated." >&2
+    return 1
+  }
+  if [[ "$current_identity" != "$SERVER_IDENTITY" ]]; then
+    echo "Server PID $SERVER_PID changed identity; no process was terminated." >&2
+    return 1
+  fi
+  docker exec sglang_bbuf kill -TERM "$SERVER_PID"
 }
 trap cleanup EXIT
 

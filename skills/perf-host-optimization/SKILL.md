@@ -209,7 +209,7 @@ For the full UT-to-file mapping, see [references/hot-path-files.md](references/h
 
 **If tests fail:**
 1. Read the failure message
-2. Rollback immediately (`git checkout -- <file>`)
+2. Read the current file and use the file-editing tool to undo only the failing optimization, preserving unrelated and user changes. Do not restore files with Git.
 3. Analyze why the optimization broke correctness
 4. Try the next-best option from Phase 2
 

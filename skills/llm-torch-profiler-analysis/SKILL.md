@@ -317,15 +317,17 @@ instead of direct `--profile-workload both`, so each stage gets its own trace fi
 
 On the current TensorRT-LLM mainline path, `py_executor.py` creates the torch profiler
 with `record_shapes=True` and `with_modules=True` but not `with_stack=True`.
-For table-quality validation, use the override generator:
+If source instrumentation is authorized, inspect the exact deployed version and
+prepare a reviewed override using the file-editing tool. Enable `with_stack=True`
+and ensure only rank 0 exports to a shared trace path. Preserve unrelated changes
+and verify the override against that version before using it.
 
-```bash
-python3 scripts/make_trtllm_py_executor_override.py \
-  --source /path/to/original/py_executor.py \
-  --output /data/bbuf/validate/unified_llm_profiler_skill/overrides/trtllm/py_executor_with_stack.py
-```
-
-The matrix runner does this automatically on H100 before TensorRT-LLM capture starts.
+Pass the existing file to the matrix runner with
+`--override-py-executor /absolute/path/to/reviewed/py_executor.py`. The file must be
+available at that path on the host and in `sglang_bbuf`. The runner validates the
+path and never generates or rewrites source code. Without authorization to edit
+the source, report the missing source-mapping evidence and use an existing trace
+only when it meets the requested analysis requirements.
 
 This is the validated TensorRT-LLM flow on `h100_sglang`:
 

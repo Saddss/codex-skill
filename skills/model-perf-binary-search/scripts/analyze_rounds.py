@@ -118,14 +118,15 @@ def main() -> int:
             return 3
         rounds: list[float] = []
         with path.open() as f:
-            for line in f:
+            for line_number, line in enumerate(f, start=1):
                 line = line.strip()
                 if not line:
                     continue
                 try:
                     rec = json.loads(line)
-                except json.JSONDecodeError:
-                    continue
+                except json.JSONDecodeError as exc:
+                    print(json.dumps({"status": "ERROR", "error": f"invalid JSON in {path_str}:{line_number}: {exc.msg}"}))
+                    return 3
                 lat = rec.get("Latency", {})
                 p50 = lat.get("p50")
                 if p50 is None:

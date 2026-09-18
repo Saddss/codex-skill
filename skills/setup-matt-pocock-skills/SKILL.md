@@ -92,4 +92,4 @@ Tell user which skills now read these files. Edit `docs/agents/*.md` directly la
 
 ## When to run
 
-Once per repo (e.g. `production-stack`, `llm-inference-benchmarking`) before first `to-issues` or `review`.
+Run once per repository only when the user explicitly requests or approves repository setup. A review or issue-planning request does not authorize initialization. If configuration is absent during a read-only task, use available repository evidence and report any missing context without creating files or labels.

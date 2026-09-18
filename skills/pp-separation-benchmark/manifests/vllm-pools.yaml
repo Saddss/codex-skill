@@ -1,4 +1,4 @@
-# 真 vLLM 冷热池(最小忠实版)——替换 mock,验证 ingress-nginx 按 header 分流命中真 vLLM。
+# Real vLLM hot/cold pools for ingress-nginx header-based routing validation.
 # 热池: 带 SimpleCPUOffloadConnector KV offload(照 controller.py:466-467 热池配置)
 # 冷池: 无 offload。各 1 副本占 1 GPU。served-model-name 一致,ingress 只按 header 分流。
 # label 复用 app=hot-pool / app=cold-pool,现有 hot-svc/cold-svc 直接选中。
@@ -15,7 +15,7 @@ spec:
       runtimeClassName: nvidia
       containers:
         - name: vllm
-          image: @@VLLM_IMAGE@@
+          image: "@@VLLM_IMAGE@@"
           imagePullPolicy: IfNotPresent
           command: ["vllm","serve","@@MODEL_PATH@@",
                     "--host","0.0.0.0","--port","8080",
@@ -41,7 +41,7 @@ spec:
             periodSeconds: 10
             failureThreshold: 60
           volumeMounts: [{ name: hf, mountPath: /root/.cache/huggingface }]
-      volumes: [{ name: hf, hostPath: { path: @@HF_HOST_PATH@@, type: Directory } }]
+      volumes: [{ name: hf, hostPath: { path: "@@HF_HOST_PATH@@", type: Directory } }]
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -55,7 +55,7 @@ spec:
       runtimeClassName: nvidia
       containers:
         - name: vllm
-          image: @@VLLM_IMAGE@@
+          image: "@@VLLM_IMAGE@@"
           imagePullPolicy: IfNotPresent
           command: ["vllm","serve","@@MODEL_PATH@@",
                     "--host","0.0.0.0","--port","8080",
@@ -78,4 +78,4 @@ spec:
             periodSeconds: 10
             failureThreshold: 60
           volumeMounts: [{ name: hf, mountPath: /root/.cache/huggingface }]
-      volumes: [{ name: hf, hostPath: { path: @@HF_HOST_PATH@@, type: Directory } }]
+      volumes: [{ name: hf, hostPath: { path: "@@HF_HOST_PATH@@", type: Directory } }]

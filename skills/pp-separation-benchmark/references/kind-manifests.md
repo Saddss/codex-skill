@@ -31,6 +31,7 @@ until kubectl -n ingress-nginx get endpoints ingress-nginx-controller-admission 
   -o jsonpath='{.subsets[0].addresses[0].ip}' | grep -q .; do sleep 5; done
 
 # 5. Routing rules + pools.
+kubectl apply -f manifests/services.yaml       # services select the real vLLM pods
 kubectl apply -f manifests/ingress.yaml        # canary-by-header split
 kubectl apply -f manifests/vllm-pools.yaml     # real vLLM hot(+offload)/cold pools
 ```

@@ -209,16 +209,20 @@ ncu --section SpeedOfLight_HierarchicalTensorRooflineChart \
 Interpretation: kernel left of ridge point = memory-bound; right = compute-bound;
 far below both roofs = latency/occupancy issue. See `references/roofline-analysis.md`.
 
-### Step 4: Interpret and Optimize
+### Step 4: Interpret and Recommend
 
 1. Identify the dominant bottleneck from SOL% classification
 2. Look up detailed analysis and optimization strategies in `references/bottleneck-guide.md`
-3. Apply highest-impact optimization first
-4. Re-profile to validate improvement and detect bottleneck shifts
+3. Explain the highest-impact optimization and the evidence supporting it.
+4. For an analysis-only request, report findings without changing code. Apply an
+   optimization only when implementation is explicitly within the user's request
+   or separately approved; then verify correctness before comparing performance.
 
 ### Step 5: Validate
 
-Re-profile the same kernel after optimization:
+When an authorized implementation has passed correctness checks, re-profile the
+same kernel under the same workload. For analysis-only work, identify the checks
+that would validate the recommendation without running an implementation workflow:
 
 ```bash
 ncu --section SpeedOfLight --csv \

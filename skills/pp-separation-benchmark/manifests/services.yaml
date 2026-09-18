@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: hot-svc
+spec:
+  selector: { app: hot-pool }
+  ports: [{ port: 80, targetPort: 8080 }]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cold-svc
+spec:
+  selector: { app: cold-pool }
+  ports: [{ port: 80, targetPort: 8080 }]

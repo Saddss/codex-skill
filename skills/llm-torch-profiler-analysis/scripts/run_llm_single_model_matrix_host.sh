@@ -7,6 +7,7 @@ Usage:
   run_llm_single_model_matrix_host.sh \
     --model-id gpt_oss_20b \
     --model openai/gpt-oss-20b \
+    --override-py-executor /path/to/reviewed/py_executor.py \
     --root /data/bbuf/validate/unified_llm_profiler_skill/runs/20260423_h100_large_model_matrix \
     --gpus 2,3,4,5 \
     --sglang-port 30098 \
@@ -54,15 +55,13 @@ PREFILL_OUTPUT_LEN=1
 DECODE_INPUT_LEN=1
 DECODE_OUTPUT_LEN=2048
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TRT_IMAGE="nvcr.io/nvidia/tensorrt-llm/release:latest"
-TRT_OVERRIDE_ROOT="/data/bbuf/validate/unified_llm_profiler_skill/overrides/trtllm"
-TRT_OVERRIDE_SOURCE="$TRT_OVERRIDE_ROOT/py_executor.original.py"
-TRT_OVERRIDE_PATH="$TRT_OVERRIDE_ROOT/py_executor_with_stack.py"
+TRT_OVERRIDE_PATH=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --model-id) MODEL_ID="$2"; shift 2 ;;
     --model) MODEL="$2"; shift 2 ;;
+    --override-py-executor) TRT_OVERRIDE_PATH="$2"; shift 2 ;;
     --root) ROOT="$2"; shift 2 ;;
     --gpus) GPUS="$2"; shift 2 ;;
     --tp-size) TP_SIZE="$2"; shift 2 ;;
@@ -103,7 +102,7 @@ if [[ -z "${HUGGINGFACE_HUB_TOKEN:-}" ]]; then
 fi
 
 for value in \
-  MODEL_ID MODEL ROOT GPUS \
+  MODEL_ID MODEL ROOT GPUS TRT_OVERRIDE_PATH \
   SGLANG_PORT VLLM_FORMAL_PORT VLLM_MAPPING_PORT \
   TRT_FORMAL_PREFILL_PORT TRT_FORMAL_DECODE_PORT \
   TRT_MAPPING_PREFILL_PORT TRT_MAPPING_DECODE_PORT; do
@@ -137,17 +136,12 @@ TRT_FORMAL_DIR="$MODEL_ROOT/trtllm_formal"
 TRT_MAPPING_DIR="$MODEL_ROOT/trtllm_mapping"
 TRT_ANALYSIS="$MODEL_ROOT/analysis_trtllm.txt"
 
-docker exec sglang_bbuf bash -lc "mkdir -p '$MODEL_ROOT'"
-
-if [[ ! -s "$TRT_OVERRIDE_SOURCE" ]]; then
-  echo "[bootstrap] TensorRT-LLM py_executor source snapshot"
-  docker exec sglang_bbuf bash -lc "mkdir -p '$TRT_OVERRIDE_ROOT'"
-  docker run --rm --entrypoint cat "$TRT_IMAGE" \
-    /usr/local/lib/python3.12/dist-packages/tensorrt_llm/_torch/pyexecutor/py_executor.py \
-    | docker exec -i sglang_bbuf bash -lc "cat > '$TRT_OVERRIDE_SOURCE'"
+if [[ "$TRT_OVERRIDE_PATH" != /* || ! -s "$TRT_OVERRIDE_PATH" || ! -r "$TRT_OVERRIDE_PATH" ]]; then
+  echo "--override-py-executor must name an existing, readable, non-empty absolute file path." >&2
+  exit 2
 fi
-echo "[bootstrap] TensorRT-LLM py_executor override with with_stack=True and rank0-only trace export"
-docker exec sglang_bbuf bash -lc "cd '$SCRIPT_DIR' && python3 make_trtllm_py_executor_override.py --source '$TRT_OVERRIDE_SOURCE' --output '$TRT_OVERRIDE_PATH'"
+docker exec sglang_bbuf test -s "$TRT_OVERRIDE_PATH"
+docker exec sglang_bbuf bash -lc "mkdir -p '$MODEL_ROOT'"
 
 sglang_args=(
   --model "$MODEL"

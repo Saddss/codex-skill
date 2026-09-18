@@ -280,7 +280,6 @@ if [[ "$DISABLE_CUDAGRAPH" -eq 1 ]]; then
 fi
 
 docker exec sglang_bbuf bash -lc "mkdir -p '$RUN_DIR'"
-docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
 
 docker_args=(
   run -d --rm
@@ -331,10 +330,10 @@ EOF
 )
 
 docker_args+=("$IMAGE" -lc "$container_cmd")
-docker "${docker_args[@]}" >/dev/null
+LAUNCHED_CONTAINER_ID=$(docker "${docker_args[@]}")
 
 cleanup() {
-  docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
+  docker rm -f "$LAUNCHED_CONTAINER_ID" >/dev/null
 }
 trap cleanup EXIT
 

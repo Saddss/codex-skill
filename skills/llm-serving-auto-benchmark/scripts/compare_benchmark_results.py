@@ -21,10 +21,7 @@ def _get(row: dict[str, Any], path: str, default: Any = None) -> Any:
 
 def _float(row: dict[str, Any], path: str, default: float = 0.0) -> float:
     value = _get(row, path, default)
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return default
+    return float(value)
 
 
 def _bool(row: dict[str, Any], path: str, default: bool = False) -> bool:
@@ -51,8 +48,9 @@ def _p50_or_mean_tpot_ms(row: dict[str, Any]) -> float:
 def _p50_or_mean_value(row: dict[str, Any], metric: str) -> Any:
     p50_value = _get(row, f"metrics.p50_{metric}_ms")
     if p50_value is not None:
-        return p50_value
-    return _get(row, f"metrics.mean_{metric}_ms")
+        return f"{_fmt(p50_value)} (P50)"
+    mean_value = _get(row, f"metrics.mean_{metric}_ms")
+    return f"{_fmt(mean_value)} (mean)" if mean_value is not None else None
 
 
 def _rank_key(row: dict[str, Any]) -> tuple[Any, ...]:
@@ -204,7 +202,7 @@ def _append_best_commands_by_framework(
             [
                 f"### `{framework}`",
                 "",
-                "| Scenario | Candidate | Status | SLA | Req/s | Output tok/s | Total tok/s | P50 TTFT ms | P50 TPOT ms | Success rate | GPUs | Server command | Artifacts |",
+                "| Scenario | Candidate | Status | SLA | Req/s | Output tok/s | Total tok/s | TTFT ms (statistic) | TPOT ms (statistic) | Success rate | GPUs | Server command | Artifacts |",
                 "| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |",
             ]
         )
@@ -237,7 +235,7 @@ def _append_cross_framework_table(
         [
             "## Cross-Framework Best Comparison",
             "",
-            "| Scenario | Rank | Framework | Candidate | SLA | Req/s | Output tok/s | P50 TTFT ms | P50 TPOT ms | GPUs | Server command |",
+            "| Scenario | Rank | Framework | Candidate | SLA | Req/s | Output tok/s | TTFT ms (statistic) | TPOT ms (statistic) | GPUs | Server command |",
             "| --- | ---: | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | --- |",
         ]
     )

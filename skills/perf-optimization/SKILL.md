@@ -133,8 +133,8 @@ Create an implementation plan covering these steps:
 2. Backup files before modification
 3. Check prerequisites (verify optimization is applicable)
 4. Implement optimization (delegate to specialist)
-5. Validate improvement (measure new performance)
-6. Check correctness (verify numerical accuracy if applicable)
+5. Check correctness (verify numerical accuracy if applicable)
+6. Validate improvement using the verified implementation (measure new performance)
 7. Clean up or revert (keep changes or revert on failure)
 
 ### Safe Modification Workflow

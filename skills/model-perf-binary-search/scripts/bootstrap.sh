@@ -73,9 +73,7 @@ else
   log "repo present (branch: $current_branch); fetching $REPO_BRANCH"
   git -C "$WORKDIR" fetch origin "$REPO_BRANCH" >&2 || fail "git fetch failed"
   git -C "$WORKDIR" checkout "$REPO_BRANCH" >&2 || fail "git checkout $REPO_BRANCH failed"
-  if ! git -C "$WORKDIR" pull --ff-only origin "$REPO_BRANCH" >&2; then
-    log "WARN: git pull --ff-only failed (local commits?); continuing with current HEAD"
-  fi
+  git -C "$WORKDIR" pull --ff-only origin "$REPO_BRANCH" >&2 || fail "git pull --ff-only failed"
 fi
 
 for f in online_replay.py requirements.txt; do

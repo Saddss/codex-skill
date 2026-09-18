@@ -1,4 +1,4 @@
-# 真 vLLM 冷热池(最小忠实版)——替换 mock,验证 ingress-nginx 按 header 分流命中真 vLLM。
+# Real vLLM hot/cold pools for ingress-nginx header-based routing validation.
 # 热池: 带 SimpleCPUOffloadConnector KV offload(照 controller.py:466-467 热池配置)
 # 冷池: 无 offload。各 1 副本占 1 GPU。served-model-name 一致,ingress 只按 header 分流。
 # label 复用 app=hot-pool / app=cold-pool,现有 hot-svc/cold-svc 直接选中。

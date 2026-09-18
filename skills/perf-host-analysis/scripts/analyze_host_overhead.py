@@ -36,12 +36,9 @@ Usage:
         --baseline /path/to/trace.sqlite \
         --baseline-label "v1.1"
 
-    # Mock mode for testing
-    python analyze_host_overhead.py --mock
 """
 
 import argparse
-import json
 import re
 import sqlite3
 import sys
@@ -323,7 +320,7 @@ def get_kernel_breakdown(conn, time_start, time_end):
         "FROM CUPTI_ACTIVITY_KIND_KERNEL k "
         "JOIN StringIds s ON k.shortName = s.id "
         "WHERE k.start >= ? AND k.start < ? "
-        "GROUP BY s.value ORDER BY total_us DESC LIMIT 15",
+        "GROUP BY s.value ORDER BY total_us DESC",
         (time_start, time_end),
     )
     return cur.fetchall()
@@ -669,47 +666,6 @@ def compare_results(baseline, target, out):
                     out.write(f"    {op}: NEW  (+{d:.0f})\n")
 
 
-def mock_output():
-    """Return mock analysis data for testing."""
-    return json.dumps(
-        {
-            "baseline": {
-                "label": "v1.1",
-                "ss_wall_per_step": 3317.4,
-                "step_dur_avg": 1500.3,
-                "inter_step_gap_p50": 2543.3,
-                "nvtx_top_ops": {
-                    "_sample_async": 1163.0,
-                    "_process_requests": 1056.3,
-                    "_prepare_inputs": 815.9,
-                    "_update_requests": 412.6,
-                    "_fetch_new_requests": 36.4,
-                },
-                "gpu_per_step": 109.8,
-                "kernels_per_step": 6.2,
-            },
-            "target": {
-                "label": "main",
-                "ss_wall_per_step": 3977.7,
-                "step_dur_avg": 1667.2,
-                "inter_step_gap_p50": 4467.6,
-                "nvtx_top_ops": {
-                    "_prepare_inputs": 871.0,
-                    "_update_requests": 722.8,
-                    "_sample_async": 720.3,
-                    "broadcast_requests": 249.6,
-                    "_fetch_new_requests": 270.4,
-                },
-                "gpu_per_step": 142.8,
-                "kernels_per_step": 21.9,
-            },
-            "regression_pct": 19.9,
-            "primary_cause": "inter-step host overhead",
-        },
-        indent=2,
-    )
-
-
 def main():
     parser = argparse.ArgumentParser(
         description="Analyze host overhead in LLM inference loops from nsys traces"
@@ -725,15 +681,10 @@ def main():
         default=1,
         help="Tensor parallel size for NVTX deduplication (default: 1)",
     )
-    parser.add_argument("--mock", action="store_true", help="Return mock data")
     args = parser.parse_args()
 
-    if args.mock:
-        print(mock_output())
-        return
-
     if not args.baseline:
-        parser.error("--baseline is required (or use --mock)")
+        parser.error("--baseline is required")
 
     out_path = args.output or "(stdout)"
     out_file = open(args.output, "w") if args.output else None

@@ -151,6 +151,8 @@ def openai_request(
 
 
 def run_probe(args: argparse.Namespace) -> Dict[str, Any]:
+    if args.requests < 1:
+        raise ValueError("--requests must be positive")
     prompts = args.prompt or list(DEFAULT_PROMPTS)
     model = args.model
     if args.framework in {"vllm", "trtllm"} and not model:
@@ -163,39 +165,38 @@ def run_probe(args: argparse.Namespace) -> Dict[str, Any]:
     for request_idx in range(args.requests):
         prompt = prompts[request_idx % len(prompts)]
         start = time.time()
-        try:
-            if args.framework == "sglang":
-                text = sglang_request(
-                    args.url,
-                    prompt,
-                    max_tokens=args.max_tokens,
-                    timeout=args.timeout,
-                )
-                source = "generate.text"
-            else:
-                assert model is not None
-                result = openai_request(
-                    args.url,
-                    model,
-                    prompt,
-                    max_tokens=args.max_tokens,
-                    timeout=args.timeout,
-                )
-                text = result["text"]
-                source = result["source"]
-            elapsed = time.time() - start
-            latencies.append(elapsed)
-            samples.append(
-                {
-                    "prompt": prompt,
-                    "latency_s": round(elapsed, 3),
-                    "content": text[:240],
-                    "source": source,
-                    "non_empty": bool(text.strip()),
-                }
+        if args.framework == "sglang":
+            text = sglang_request(
+                args.url,
+                prompt,
+                max_tokens=args.max_tokens,
+                timeout=args.timeout,
             )
-        except Exception as exc:  # pragma: no cover - runtime probe path
-            errors.append({"prompt": prompt, "error": repr(exc)})
+            source = "generate.text"
+        else:
+            assert model is not None
+            result = openai_request(
+                args.url,
+                model,
+                prompt,
+                max_tokens=args.max_tokens,
+                timeout=args.timeout,
+            )
+            text = result["text"]
+            source = result["source"]
+        if not text.strip():
+            raise RuntimeError(f"Probe request {request_idx + 1} returned empty text")
+        elapsed = time.time() - start
+        latencies.append(elapsed)
+        samples.append(
+            {
+                "prompt": prompt,
+                "latency_s": round(elapsed, 3),
+                "content": text[:240],
+                "source": source,
+                "non_empty": True,
+            }
+        )
 
     return {
         "framework": args.framework,

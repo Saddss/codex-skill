@@ -325,9 +325,11 @@ relu_host(from_dlpack(x, assumed_align=16), from_dlpack(out, assumed_align=16))
 
 See `references/troubleshooting.md` for the full error table and limitations.
 
-**Debugging rule:** Never delete kernel.py during debugging. Use `backup_file`
-to save a checkpoint, then `edit_file` to iterate. If stuck, `revert_file` to
-restore the backup. A partially-working kernel is always better than no kernel.
+**Debugging rule:** Preserve the user's current files and a recoverable baseline.
+Use the available file-editing tool to iterate or restore only task-owned changes.
+Do not restore files with Git. Keep failing experiments separate from production
+paths and report their verification failures; an unverified kernel is not a
+completed implementation.
 
 ## Finding More Information
 

@@ -10,28 +10,28 @@ When assessing a candidate for deepening, classify its dependencies. The categor
 
 Pure computation, in-memory state, no I/O. Always deepenable — merge the modules and test through the new interface directly. No adapter needed.
 
-### 2. Local-substitutable
+### 2. Local runtime
 
-Dependencies that have local test stand-ins (PGLite for Postgres, in-memory filesystem). Deepenable if the stand-in exists. The deepened module is tested with the stand-in running in the test suite. The seam is internal; no port at the module's external interface.
+Dependencies that can run locally, such as a database or filesystem. Test against the actual supported implementation in an isolated environment. Preserve relevant production behavior and report requirements that cannot be exercised locally.
 
 ### 3. Remote but owned (Ports & Adapters)
 
-Your own services across a network boundary (microservices, internal APIs). Define a **port** (interface) at the seam. The deep module owns the logic; the transport is injected as an **adapter**. Tests use an in-memory adapter. Production uses an HTTP/gRPC/queue adapter.
+Your own services across a network boundary (microservices, internal APIs). Define a **port** (interface) when the boundary warrants one. Test the transport adapter against an actual isolated service instance. Pure domain logic can be tested directly without substituting the service's responses.
 
-Recommendation shape: *"Define a port at the seam, implement an HTTP adapter for production and an in-memory adapter for testing, so the logic sits in one deep module even though it's deployed across a network."*
+Keep the domain logic and transport boundary explicit, and validate both domain behavior and the real service contract.
 
-### 4. True external (Mock)
+### 4. Third-party service
 
-Third-party services (Stripe, Twilio, etc.) you don't control. The deepened module takes the external dependency as an injected port; tests provide a mock adapter.
+Use the provider's supported test environment with the necessary authorization. If it is unavailable, report the integration check as unrun and identify the missing access. Do not invent responses or claim integration coverage from a substitute implementation.
 
 ## Seam discipline
 
-- **One adapter means a hypothetical seam. Two adapters means a real one.** Don't introduce a port unless at least two adapters are justified (typically production + test). A single-adapter seam is just indirection.
+- **Justify boundaries by real constraints.** Ownership, external protocols, and independent deployment can justify a port with one adapter. Do not create a test-only adapter to justify an abstraction.
 - **Internal seams vs external seams.** A deep module can have internal seams (private to its implementation, used by its own tests) as well as the external seam at its interface. Don't expose internal seams through the interface just because tests use them.
 
 ## Testing strategy: replace, don't layer
 
-- Old unit tests on shallow modules become waste once tests at the deepened module's interface exist — delete them.
+- Retain existing regression coverage until equivalent behavior and edge cases are verified through the new interface. Remove a test only when its assertions are demonstrably redundant or its contract is intentionally changed.
 - Write new tests at the deepened module's interface. The **interface is the test surface**.
 - Tests assert on observable outcomes through the interface, not internal state.
 - Tests should survive internal refactors — they describe behaviour, not implementation. If a test has to change when the implementation changes, it's testing past the interface.

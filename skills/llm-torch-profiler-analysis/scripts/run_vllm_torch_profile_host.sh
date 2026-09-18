@@ -234,7 +234,6 @@ if [[ -z "$CONTAINER_NAME" ]]; then
 fi
 
 docker exec sglang_bbuf bash -lc "mkdir -p '$PROFILE_DIR'"
-docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
 
 profiler_config=$(python3 - <<PY
 import json
@@ -278,9 +277,9 @@ if [[ "$TRUST_REMOTE_CODE" -eq 1 ]]; then
   docker_cmd+=(--trust-remote-code)
 fi
 
-docker "${docker_args[@]}" "${docker_cmd[@]}" >/dev/null
+LAUNCHED_CONTAINER_ID=$(docker "${docker_args[@]}" "${docker_cmd[@]}")
 cleanup() {
-  docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
+  docker rm -f "$LAUNCHED_CONTAINER_ID" >/dev/null
 }
 trap cleanup EXIT
 
