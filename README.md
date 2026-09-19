@@ -17,11 +17,21 @@ This policy does not disable application-managed system skills or plugin require
 
 ## Installation
 
-Review `AGENTS.md` and each selected skill before installation. Back up existing local files and reconcile differences before replacing them.
+Review `AGENTS.md` and the skills you intend to use before installing them, then sync this snapshot into the Codex home:
 
-Place the global instructions at `$CODEX_HOME/AGENTS.md` and selected skill directories under `$CODEX_HOME/skills/`. The default Codex home is `~/.codex`. Review machine-specific paths in the instructions when installing on another machine.
+```bash
+python3 sync.py --dry-run          # report what would change
+python3 sync.py                    # copy the differences
+```
 
-Keep each selected skill's supporting files together with its `SKILL.md`. Dependencies and runtime requirements are documented in the individual skills.
+The script writes `AGENTS.md` and `skills/` into `$CODEX_HOME` (default `~/.codex`) and copies only the files whose content differs. Files there that this repository does not have stay in place, so machine-specific skills survive a sync; credentials, session history and runtime artifacts are never touched.
+
+- `--codex-home DIR` chooses another destination.
+- `--prune` also deletes files under `skills/` that the repository does not have.
+- `--backup` keeps replaced and deleted files under `.local-backups/`.
+- `-v` lists unchanged files as well.
+
+The default Codex home is `~/.codex`. Review machine-specific paths in the instructions when installing on another machine, and keep each selected skill's supporting files together with its `SKILL.md`. Dependencies and runtime requirements are documented in the individual skills.
 
 ## Scope and provenance
 
