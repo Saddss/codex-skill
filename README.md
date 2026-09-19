@@ -6,8 +6,9 @@ Personal Codex skills and global agent instructions.
 
 - `AGENTS.md`: the global instructions maintained at `~/.codex/AGENTS.md`.
 - `skills/`: 31 personal skills, including their references, scripts, templates, and configuration examples.
+- `scripts/install.sh`: links the two above into a Codex home.
 
-The repository contains a snapshot of the local files. Repository edits and installed files are independent; synchronization is explicit.
+`scripts/install.sh` links the repository into `$CODEX_HOME`, so the installed entries are these files and `git pull` keeps them current.
 
 ## Skill invocation
 
@@ -17,21 +18,22 @@ This policy does not disable application-managed system skills or plugin require
 
 ## Installation
 
-Review `AGENTS.md` and the skills you intend to use before installing them, then sync this snapshot into the Codex home:
+Review `AGENTS.md` and the skills you intend to use before installing them, then link this repository into the Codex home:
 
 ```bash
-python3 sync.py --dry-run          # report what would change
-python3 sync.py                    # copy the differences
+bash scripts/install.sh --dry-run     # report what would change
+bash scripts/install.sh               # create the links
 ```
 
-The script writes `AGENTS.md` and `skills/` into `$CODEX_HOME` (default `~/.codex`) and copies only the files whose content differs. Files there that this repository does not have stay in place, so machine-specific skills survive a sync; credentials, session history and runtime artifacts are never touched.
+The script links `AGENTS.md` and each skill directory into `$CODEX_HOME` (default `~/.codex`). Skills are linked one by one, so system-managed skills such as `$CODEX_HOME/skills/.system`, and any other skill you keep there, stay untouched.
+
+Linking is a one-time step. The installed entries are these repository files, so `git pull` in the checkout is the synchronization from then on.
 
 - `--codex-home DIR` chooses another destination.
-- `--prune` also deletes files under `skills/` that the repository does not have.
-- `--backup` keeps replaced and deleted files under `.local-backups/`.
-- `-v` lists unchanged files as well.
+- An existing copy that matches the repository is replaced by a link; a copy that differs is moved aside to `<name>.bak.<timestamp>` first.
+- Links that point into this repository but no longer resolve are removed.
 
-The default Codex home is `~/.codex`. Review machine-specific paths in the instructions when installing on another machine, and keep each selected skill's supporting files together with its `SKILL.md`. Dependencies and runtime requirements are documented in the individual skills.
+Review machine-specific paths in the instructions when installing on another machine, and keep each skill's supporting files together with its `SKILL.md`. Dependencies and runtime requirements are documented in the individual skills.
 
 ## Scope and provenance
 
